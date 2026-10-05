@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  English UI strings.
+
+  Ported from the desktop build's ui/i18n/en.json. Keys are renamed to Android
+  conventions; wording that referenced desktop-only concepts (tray icon,
+  Windows startup, Telegram Desktop menus) is adapted to the Android
+  equivalents while keeping the meaning.
+-->
+<resources>
+    <string name="app_name">TG WS Proxy</string>
+
+    <string name="language_ru">Русский</string>
+    <string name="language_en">English</string>
+
+    <string name="appearance_auto">Auto</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_theme">Theme</string>
+
+    <string name="section_interface">Interface</string>
+    <string name="section_mtproto">MTProto Connection</string>
+    <string name="section_dc">Telegram Data Centers (DC → IP)</string>
+    <string name="section_cfproxy">Cloudflare Proxy</string>
+    <string name="section_cfworker">Cloudflare Worker</string>
+    <string name="section_logs">Logs &amp; Performance</string>
+    <string name="section_startup">Startup</string>
+    <string name="section_controls">Controls</string>
+
+    <string name="label_host">IP address</string>
+    <string name="label_port">Port</string>
+    <string name="label_secret">Secret</string>
+    <string name="label_fake_tls">Fake TLS domain (optional)</string>
+    <string name="label_dc_hint">One rule per line, format: number:IP</string>
+    <string name="label_cf_enable">Enable CF proxy</string>
+    <string name="label_cf_custom_domain">Custom domain</string>
+    <string name="label_h2_enable">Media multiplexing (HTTP/2)</string>
+    <string name="label_cfworker_domains">Cloudflare Worker domains (comma-separated)</string>
+    <string name="label_verbose">Verbose logging</string>
+    <string name="label_no_secure">Disable TLS for CF-proxy and CF-worker</string>
+    <string name="label_buf_kb">Buffer, KB (default 256)</string>
+    <string name="label_pool_size">WebSocket session pool (default 4)</string>
+    <string name="label_log_max_mb">Max log size, MB (default 5)</string>
+    <string name="label_force_test_dc">Force Telegram test data centers</string>
+    <string name="label_autostart">Start on system boot</string>
+    <string name="label_autostart_hint">Android may delay or block automatic startup on some devices; opening the app always works.</string>
+    <string name="label_battery_exempt">Ignore battery optimizations</string>
+    <string name="label_battery_exempt_hint">Opens a system dialog and applies immediately — it is not affected by Save/Cancel. Without this exemption some devices stop the proxy in the background.</string>
+
+    <string name="tip_host">Address the proxy listens on.\nUsually 127.0.0.1 for localhost, 0.0.0.0 for all interfaces</string>
+    <string name="tip_port">Proxy port. Telegram proxy settings must use the same port</string>
+    <string name="tip_secret">Secret key for client authorization</string>
+    <string name="tip_fake_tls">Masks the proxy as TLS traffic to the given domain (ee-secret).\nLeave empty to disable</string>
+    <string name="tip_dc">Mapping of Telegram data center (DC) number to web.telegram.org dc server IP.\nEach line: «number:IP», e.g. 4:149.154.167.220. The proxy routes traffic to Telegram servers using these rules\n\nIf connection fails then fallbacks are used</string>
+    <string name="tip_verbose">When enabled, more details are written to the log file — useful for troubleshooting</string>
+    <string name="tip_no_secure">When enabled, the proxy will use port 80 for CF-proxy and CF-worker connections</string>
+    <string name="tip_buf_kb">Receive/send buffer size in kilobytes.\nA larger value allocates more memory per socket</string>
+    <string name="tip_pool">How many ready WebSocket connections to keep per data center.\n0 disables the direct DC-&gt;IP WebSocket route</string>
+    <string name="tip_log_mb">Maximum log file size; the file is overwritten when the limit is reached</string>
+    <string name="tip_force_test_dc">Force ALL traffic to Telegram TEST data centers.\nOnly needed for clients that signal test DCs as plain 1-3</string>
+    <string name="tip_autostart">Start the proxy automatically after the device boots</string>
+    <string name="tip_cfproxy">Use Cloudflare proxy for unreachable data centers</string>
+    <string name="tip_cfproxy_domain">Your own domains proxied through Cloudflare for HTTP/2 and WS connections.\nSeparate multiple domains with commas.\nIf empty — chosen automatically from supported domains</string>
+    <string name="tip_h2">Share one HTTP/2 connection per data center and domain for media downloads through Cloudflare.\nRequires CF proxy and TLS enabled.</string>
+    <string name="tip_cfproxy_user_domain_cb">Specify your own domains instead of automatic selection</string>
+    <string name="tip_cfworker_domain">Cloudflare Worker domains (e.g. name.account.workers.dev).\nSeparate multiple domains with commas.\nThe proxy routes connections to Telegram DCs by IP through them</string>
+
+    <string name="button_save">Save</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="button_test">Test</string>
+    <string name="button_test_loading">...</string>
+    <string name="button_docs">Documentation</string>
+    <string name="button_close">Close</string>
+    <string name="button_ok">OK</string>
+    <string name="button_regenerate">Regenerate</string>
+    <string name="button_diagnostics">Diagnostics</string>
+    <string name="button_copy">Copy</string>
+
+    <string name="validation_bad_host">Invalid IP address.</string>
+    <string name="validation_bad_port">Port must be a number between 1 and 65535</string>
+    <string name="validation_bad_secret_len">Secret must be exactly 32 hex characters (16 bytes).</string>
+    <string name="validation_bad_secret_hex">Secret must contain only hex characters (0-9, a-f).</string>
+    <string name="validation_dc_format">Invalid DC:IP format: %1$s</string>
+    <string name="validation_dc_invalid">Invalid DC:IP entry: %1$s</string>
+    <string name="validation_title">Invalid settings</string>
+
+    <string name="connectivity_cfproxy_title">CF Proxy</string>
+    <string name="connectivity_cfworker_title">CF Worker</string>
+    <string name="connectivity_timeout">timeout</string>
+    <string name="connectivity_no_response">no response</string>
+    <string name="connectivity_all_ok">%1$s: all working</string>
+    <string name="connectivity_available">%1$s: available</string>
+    <string name="connectivity_partial">%1$s: partially working</string>
+    <string name="connectivity_unavailable">%1$s: unavailable</string>
+    <string name="connectivity_auto_ok">✓ %1$s works. %2$d of %3$d servers reachable.</string>
+    <string name="connectivity_all_ok_domain">✓ All %1$d servers reachable via %2$s.</string>
+    <string name="connectivity_none_ok">✗ No servers respond via %1$s.\n\nErrors:\n%2$s</string>
+    <string name="connectivity_partial_detail">Domain: %1$s\n\n✓ Working: %2$s\n\n✗ Unreachable:\n%3$s</string>
+    <string name="connectivity_error_line">  %1$s%2$d: %3$s</string>
+    <string name="connectivity_cf_auto_fail">✗ None of the automatic CF domains respond.</string>
+    <string name="connectivity_multi_all_ok">✓ %1$s: all %2$d servers reachable</string>
+    <string name="connectivity_multi_fail">✗ %1$s: unavailable</string>
+    <string name="connectivity_multi_partial">~ %1$s: working %2$s; unreachable %3$s</string>
+    <string name="connectivity_no_domains">Enter at least one domain to test.</string>
+
+    <string name="first_run_title">Proxy setup</string>
+    <string name="first_run_start_hint">Press Start to launch the proxy, then connect Telegram:</string>
+    <string name="first_run_how_to">How to connect Telegram:</string>
+    <string name="first_run_auto">  Automatically:</string>
+    <string name="first_run_auto_hint">  Tap «Open in Telegram» on the main screen</string>
+    <string name="first_run_auto_link">  Or copy the link, send it to yourself in TG and tap it: %1$s</string>
+    <string name="first_run_manual">  Manually:</string>
+    <string name="first_run_manual_path">  Settings → Data and Storage → Proxy → Add proxy</string>
+    <string name="first_run_manual_mtproto">  MTProto → %1$s : %2$d</string>
+    <string name="first_run_manual_secret">  Secret: dd%1$s</string>
+    <string name="first_run_open_now">Open proxy in Telegram now</string>
+
+    <string name="status_running">Running</string>
+    <string name="status_stopped">Stopped</string>
+    <string name="status_starting">Starting…</string>
+    <string name="status_stopping">Stopping…</string>
+    <string name="status_address">Address: %1$s</string>
+    <string name="stats_title">Statistics</string>
+    <string name="stats_connections">Connections: total %1$s · active %2$s</string>
+    <string name="stats_routing">Routing: ws %1$s · tcp %2$s · cf %3$s · fronting %4$s</string>
+    <string name="stats_h2">HTTP/2: sessions %1$s · tcp %2$s · requests %3$s · errors %4$s</string>
+    <string name="stats_health">Health: bad %1$s · masked %2$s · errors %3$s</string>
+    <string name="stats_pool">Pool: ws %1$s · cf %2$s</string>
+    <string name="stats_traffic">Traffic: ↑ %1$s · ↓ %2$s</string>
+
+    <string name="button_start">Start</string>
+    <string name="button_stop">Stop</string>
+    <string name="button_restart">Restart</string>
+    <string name="button_copy_link">Copy link</string>
+    <string name="button_open_tg">Open in Telegram</string>
+    <string name="button_settings">Settings</string>
+    <string name="button_logs">Logs</string>
+    <string name="button_refresh">Refresh</string>
+    <string name="button_share">Share</string>
+    <string name="button_clear">Clear</string>
+    <string name="button_about">About</string>
+
+    <string name="logs_title">Logs</string>
+    <string name="logs_empty">Log file has not been created yet.</string>
+    <string name="logs_share_title">Share log</string>
+
+    <string name="dialog_restart_title">Restart?</string>
+    <string name="dialog_restart_body">Settings saved.\n\nRestart the proxy now?</string>
+    <string name="dialog_copy_ok">Link copied to clipboard, send it in Telegram and tap it:\n%1$s</string>
+    <string name="dialog_copy_fail">Failed to copy link:\n%1$s</string>
+    <string name="dialog_copy_title">Proxy link</string>
+    <string name="dialog_open_tg_fail">Could not open Telegram automatically.\n\n%1$s</string>
+    <string name="dialog_open_tg_fail_clipboard">Link copied to clipboard, send it in Telegram and tap it:\n%1$s</string>
+    <string name="dialog_about_title">About</string>
+
+    <!-- Attribution. The MIT licence requires the original copyright notice to
+         travel with every copy, so it is shown in full inside the app. -->
+    <string name="about_text">TG WS Proxy for Android — version %1$s\n\nA fork of tg-ws-proxy by Flowseal. The MTProto proxy core is the original project\'s code, kept byte-identical wherever possible; the Android application (interface, foreground service, Python bridge) is new work.\n\nOriginal project:\nhttps://github.com/Flowseal/tg-ws-proxy\n\nThis fork:\nhttps://github.com/nixikon/tg-ws-proxy-android</string>
+    <string name="about_original">Original\nproject</string>
+    <string name="about_fork">Fork on\nGitHub</string>
+    <string name="about_license">Licence</string>
+    <string name="about_license_text">MIT License\n\nCopyright (c) 2026 Flowseal — original tg-ws-proxy project\nhttps://github.com/Flowseal/tg-ws-proxy\n\nCopyright (c) 2026 nixikon — Android port and fork\nhttps://github.com/nixikon/tg-ws-proxy-android\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</string>
+
+    <string name="error_dc_config">DC → IP configuration error.</string>
+    <string name="error_start_title">Failed to start proxy</string>
+    <string name="error_python_title">Internal error</string>
+    <string name="dialog_diagnostics_title">Diagnostics</string>
+    <string name="error_unknown">Unexpected error:\n%1$s</string>
+
+    <string name="diagnostics_port_busy">Failed to start proxy:\nPort is already in use by another application.\n\nClose the app using this port, or change the port in proxy settings and restart.</string>
+    <string name="diagnostics_permission">Failed to start proxy:\nAccess to address/port denied (firewall or permissions).\n\nChange the port to a random value in 10000–50000 in settings and restart.</string>
+    <string name="diagnostics_bad_address">Failed to start proxy:\nInvalid or unavailable listen address.\n\nVerify host and port in proxy settings and restart.</string>
+
+    <string name="ipv6_warning">IPv6 connectivity is enabled on your device.\n\nTelegram may try to connect over IPv6, which is not supported by this proxy and may cause errors.\n\nIf the proxy does not work, try disabling IPv6 in your Telegram proxy settings or system-wide.\n\nThis warning is shown only once.</string>
+
+    <string name="notif_channel_name">Proxy status</string>
+    <string name="notif_channel_desc">Keeps the local MTProto proxy running in the background.</string>
+    <string name="notif_title">TG WS Proxy</string>
+    <string name="notif_text_running">Listening on %1$s</string>
+    <string name="notif_text_running_stats">Listening on %1$s · active %2$d · ↑%3$s ↓%4$s</string>
+    <string name="notif_text_starting">Starting…</string>
+    <string name="notif_text_stopped">Stopped</string>
+    <string name="notif_action_open_tg">Open in Telegram</string>
+    <string name="notif_action_restart">Restart</string>
+    <string name="notif_blocked_hint">Notifications for the app are off, so there will be no “T” next to the clock and no running-proxy notification.</string>
+    <string name="notif_silent_hint">The “Proxy status” notification channel is below Default (silent). Some ROMs, MIUI among them, therefore draw no “T” in the status bar — switch the channel to Default.</string>
+    <string name="notif_blocked_button">Notification settings</string>
+
+    <string name="section_calls">Calls</string>
+    <string name="calls_hint">Voice and video calls, and voice chats, do not work through an MTProto proxy — that is how the protocol is built, not a fault of this build. Messages, files and voice messages keep working.</string>
+    <string name="calls_more">Why, and what to do</string>
+    <string name="calls_title">Calls through the proxy</string>
+    <string name="calls_help">Voice and video calls, and voice chats, do not work through an MTProto proxy. This is an architectural limit of MTProto proxies rather than a bug in this app — the original project says the same in its FAQ.\n\nWhy\n• The proxy carries MTProto over TCP and nothing else.\n• A call\'s audio and video are a separate media stream over UDP (WebRTC), flowing directly between the clients or through Telegram relays. That stream never reaches the proxy, and it cannot be carried over a WebSocket.\n• Telegram for Android has no "calls through the proxy" switch at all: the client never hands a call to the proxy. So the proxy does not break calls either — they depend only on whether the phone can reach Telegram\'s servers directly.\n\nWhat to do\n• In Telegram\'s proxy settings, turn off "Use proxy for calls" if that option is there.\n• Or disable the proxy for the duration of the call: Telegram → Settings → Data and Storage → Proxy → off, then back on afterwards.\n• If calls fail without the proxy as well, the network is blocking Telegram calls (the media is UDP). Only a VPN helps there: it carries UDP, an MTProto proxy does not.\n\nHow to find out which it is\n• Disable the proxy in Telegram and call again: if the call goes through, it is the proxy connection; if it does not, the network is blocking it.\n• Diagnostics has a "call path" line that checks whether the phone reaches Telegram directly (TCP only — call media is UDP and cannot be probed this way).\n• A log taken during a failed call helps pin the cause down: Logs → Share.\n\nVoice messages, files and video keep working: they go over TCP through the media DC.</string>
+
+    <!-- Announced by notification when the app is not on screen, e.g. when the
+         proxy was started from the Quick Settings tile. -->
+    <string name="notif_update_channel_name">Updates</string>
+    <string name="notif_update_channel_desc">Tells you when a new build of the app is out.</string>
+    <string name="notif_update_title">Version %1$s is available</string>
+    <string name="notif_update_text">You have %1$s. Tap Download to update the app.</string>
+    <string name="notif_action_download">Download</string>
+
+    <string name="update_title">Update</string>
+    <string name="update_available">Version %1$s is available (you have %2$s).</string>
+    <string name="update_download">Download and install</string>
+    <string name="update_later">Later</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_failed">Download failed:\n%1$s</string>
+    <string name="update_install_failed">Could not start the installer:\n%1$s</string>
+    <string name="update_need_permission">Android needs your permission to install updates from this app. Enable it on the next screen and the update continues by itself.</string>
+    <string name="update_open_settings">Open settings</string>
+
+    <string name="toast_link_copied">Link copied</string>
+    <string name="toast_copied">Copied</string>
+    <string name="battery_settings_unavailable">Could not open battery settings.</string>
+</resources>

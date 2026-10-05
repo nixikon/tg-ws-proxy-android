@@ -1,0 +1,18 @@
+# Сборка и мусор сборки
+android/build/
+android/app/build/
+android/.gradle/
+android/.kotlin/
+android/.idea/
+android/local.properties
+*.iml
+
+# Python
+__pycache__/
+*.pyc
+
+# Логи и временные файлы
+*.log
+
+# Собранные APK не хранятся в репозитории — они лежат в релизах
+dist/

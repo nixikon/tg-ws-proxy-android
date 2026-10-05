@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launcher icon: the same mark the desktop build generates when icon.ico is
+  unavailable (a white "T" on Telegram blue, `utils/tray_common.make_icon_image`).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#0088CC"
+        android:pathData="M54,54m-50,0a50,50 0 1,0 100,0a50,50 0 1,0 -100,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,32 H78 V46 H60 V78 H48 V46 H30 Z" />
+</vector>

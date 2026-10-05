@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      No statusBarColor override: it is deprecated and ignored once edge-to-edge
+      is enforced (targetSdk 35+). Each screen instead sets
+      fitsSystemWindows on its root so content clears the system bars, and the
+      status-bar icon colour is declared per light/dark theme.
+    -->
+    <style name="Theme.TgWsProxy" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+    </style>
+</resources>
