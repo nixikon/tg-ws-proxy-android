@@ -51,18 +51,7 @@ class ProxyService : Service() {
          * foreground service (background-start restrictions), which the Quick
          * Settings tile uses to fall back to opening the app.
          */
-        fun start(ctx: Context): Boolean {
-            val intent = Intent(ctx, ProxyService::class.java).setAction(ACTION_START)
-            return try {
-                ContextCompat.startForegroundService(ctx, intent)
-                true
-            } catch (t: Exception) {
-                lastErrorCode = "start_rejected"
-                lastErrorDetail = t.message ?: t.toString()
-                AppLog.append(ctx, "service", "startForegroundService refused: $lastErrorDetail")
-                false
-            }
-        }
+        fun start(ctx: Context): Boolean = request(ctx, ACTION_START, "start")
 
         fun stop(ctx: Context) {
             val intent = Intent(ctx, ProxyService::class.java).setAction(ACTION_STOP)
@@ -73,17 +62,63 @@ class ProxyService : Service() {
             }
         }
 
-        fun restart(ctx: Context): Boolean {
-            val intent = Intent(ctx, ProxyService::class.java).setAction(ACTION_RESTART)
+        fun restart(ctx: Context): Boolean = request(ctx, ACTION_RESTART, "restart")
+
+        /**
+         * Brings the service up in the foreground.
+         *
+         * Android 12+ refuses a foreground-service start from the background.
+         * That is the normal outcome for the Quick Settings tile and for
+         * autostart after boot on ROMs that are strict about it: the caller then
+         * opens the app, and the activity — a foreground context — starts us
+         * instead. Such a refusal is not a proxy failure, so it only goes to the
+         * log; queuing it as a UI error used to produce a dialog with the raw
+         * system text ("startForegroundService() not allowed due to
+         * mAllowStartForeground false…") while the proxy was starting fine.
+         */
+        private fun request(ctx: Context, action: String, what: String): Boolean {
+            val intent = Intent(ctx, ProxyService::class.java).setAction(action)
             return try {
                 ContextCompat.startForegroundService(ctx, intent)
                 true
             } catch (t: Exception) {
-                lastErrorCode = "start_rejected"
-                lastErrorDetail = t.message ?: t.toString()
-                AppLog.append(ctx, "service", "restart refused: $lastErrorDetail")
+                val detail = t.message ?: t.toString()
+                if (isBackgroundStartBlocked(t)) {
+                    AppLog.append(
+                        ctx, "service",
+                        "$what refused: background start not allowed ($detail)",
+                    )
+                } else {
+                    lastErrorCode = "start_rejected"
+                    lastErrorDetail = detail
+                    AppLog.append(ctx, "service", "$what refused: $detail")
+                }
                 false
             }
+        }
+
+        /**
+         * True when the refusal is Android's background-start restriction
+         * rather than a real problem with the service.
+         *
+         * Checked by class name instead of `is ForegroundServiceStartNotAllowedException`:
+         * that class exists only since API 31 while `minSdk` is 24, and a direct
+         * reference would risk a class-loading failure on older devices.
+         */
+        private fun isBackgroundStartBlocked(t: Throwable): Boolean {
+            var cause: Throwable? = t
+            while (cause != null) {
+                if (cause.javaClass.name ==
+                    "android.app.ForegroundServiceStartNotAllowedException"
+                ) {
+                    return true
+                }
+                cause = cause.cause
+            }
+            val detail = t.message.orEmpty()
+            return detail.contains("mAllowStartForeground", ignoreCase = true) ||
+                detail.contains("Background start not allowed", ignoreCase = true) ||
+                detail.contains("app is in background", ignoreCase = true)
         }
     }
 

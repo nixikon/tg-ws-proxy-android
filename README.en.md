@@ -15,8 +15,8 @@ CPython interpreter via [Chaquopy](https://chaquo.com/chaquopy/).
 ## Deliverable
 
 Ready-made APKs live in [Releases](../../releases/latest): the latest is
-`TgWsProxy-1.11.0-a8-android.apk` (a fork release build, ~38 MB, ABIs
-`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `a7` and older
+`TgWsProxy-1.11.0-a9-android.apk` (a fork release build, ~38 MB, ABIs
+`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `a8` and older
 builds kept beside it for rollback. Building from source is described below.
 
 The APK is signed with the standard Android **debug** key so it can be
@@ -86,7 +86,7 @@ Everything the desktop tray app does has an Android equivalent:
 | Statistics line | Live stats on the main screen and in the notification |
 | Single instance | `singleTop` activity + a single service instance |
 | Donate / docs links | Buttons on the main and settings screens, language-aware doc URLs |
-| Quick Settings tile | `ProxyTileService`: start/stop without opening the app, localised state and subtitle |
+| Quick Settings tile | `ProxyTileService`: start/stop without opening the app, localised state and subtitle; if the system refuses a background start, the tile opens the app and the app starts the proxy right away |
 | Battery optimization exemption | Settings → Startup: system dialog `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` |
 
 `fake_tls_domain` and `force_test_dc` are additionally exposed in the settings
@@ -152,6 +152,36 @@ cd android
 The Gradle wrapper pins the same Gradle version the builds here were made with
 (8.14.3). `android/local.properties` is not committed — point `ANDROID_HOME` (or
 `sdk.dir`) at your SDK instead.
+
+## Revision 14 — starting from the tile without a bogus error dialog
+
+The symptom, from a tablet: tapping the Quick Settings tile opened the app and put
+a "Failed to start proxy" dialog on top of it, reading
+`Непредвиденная ошибка: startForegroundService() not allowed due to
+mAllowStartForeground false: service com.nixikon.tgwsproxy/.ProxyService`.
+
+| What | Details |
+| --- | --- |
+| **Cause** | Android 12+ forbids starting a foreground service from the background, and a tile is not an activity, so on some ROMs the system rejects the start (on other devices the same start goes through). The workaround has been in place since revision 4: the tile opens the app, and the app starts the proxy from a visible window. The defect was elsewhere — the system's refusal went into the same error queue the UI reads for real failures, and surfaced as a modal dialog with the raw English exception text, while the proxy was in fact already starting |
+| **A system refusal is no longer an app error** | `ProxyService` now tells the background-start restriction (`ForegroundServiceStartNotAllowedException`, plus the message variants vendor ROMs use) apart from real refusals: the first is only logged (`start refused: background start not allowed (…)`), the second is still reported in a dialog. The class is matched by name because it exists only since API 31 while `minSdk` is 24 |
+| **An explanation instead of a dialog** | When the tile had to open the app, the app shows one short toast: "The system blocked a background start — turning the proxy on from the app". The tile passes the reason in the intent (`EXTRA_TILE_FALLBACK`), so the toast does not appear when the app was opened for any other reason |
+| **Separate text for real refusals** | The `start_rejected` code no longer falls through to "Unexpected error" with raw text: the dialog explains what to do in the UI language (`error_start_rejected` in RU and EN), and the technical line stays in the log |
+| **Version** | `1.11.0-a9` (versionCode 15) |
+
+If the tile on your device always opens the app: that is system policy, not an app
+failure. Lifting the background restrictions helps — Settings → Battery →
+Unrestricted for TG WS Proxy (the app itself has an "Ignore battery optimization"
+switch in the Autostart section).
+
+## Revision 13 — the sources are published in the open repository
+
+| What | Details |
+| --- | --- |
+| **Source publication** | The sources are published in [nixikon/tg-ws-proxy-android](https://github.com/nixikon/tg-ws-proxy-android): the Gradle project (`android/`), the helper scripts (`tools/`), the release texts (`docs/`), the README in two languages and the licence. APK builds, Gradle caches, the upstream clone and `local.properties` are not published — `.gitignore` covers them |
+| **Gradle wrapper** | The project now carries a wrapper (`android/gradlew`, `gradlew.bat`, `gradle/wrapper/`, Gradle 8.14.3) so building does not depend on a local Gradle install: `cd android && ./gradlew :app:assembleRelease` |
+| **Repository README** | Rewritten for a repository that holds the sources: builds, installation, features, the calls section, project layout, build requirements, how the core differs from upstream, licence |
+
+No changes to the app itself in that revision: the version stayed `1.11.0-a8`.
 
 ## Revision 12 — checking the direct path to Telegram
 
@@ -435,6 +465,7 @@ through `adb` and checked on screen:
 | **Tile without flicker** | sampled every 1.4 s for 13 s after tapping "off": "Running" → "Stopped" and it stays, with no return to "on" |
 | **Quick Settings tile** | "Stopped" → tap → "Running" with the app staying in the background (`accepted=true`); tapping again → "Stopped" with `Proxy stopped`; a proxy started from the tile returned `resPQ` |
 | **Tile fallback path** | a force-stopped app opened with `ACTION_START_PROXY` logged `auto-start requested from the tile` and `Listening on 127.0.0.1:1455`, with no button press |
+| **`a9`: starting from the tile, hint instead of an error dialog** | a force-stopped app opened with `ACTION_START_PROXY` + `EXTRA_TILE_FALLBACK` (what the tile does after the system refuses a background start): the toast "The system blocked a background start — turning the proxy on from the app" was on screen, the log showed `auto-start requested from the tile` and `Listening on 127.0.0.1:1443`, the status read "Running" with the "T" icon, and there was no dialog with `Непредвиденная ошибка: startForegroundService() not allowed due to mAllowStartForeground false…` |
 | **Battery exemption** | system dialog appeared; after Allow the package is in the Doze whitelist (`dumpsys deviceidle whitelist`) and the switch showed as on |
 | **In-app update `a3` → `a4`** | on the emulator with `a3` installed: `version 1.11.0-a4 is available` in the log 5 s after launch, the dialog showed both versions and the release notes; *Download and install* → permission prompt → the system *Install unknown apps* screen → download of `cache/update.apk` at exactly 39 967 379 bytes (= the asset size) → system installer *Do you want to update this app?* → install → `versionName=1.11.0-a4`, `versionCode=10` |
 | **The `a4` build after updating** | Settings, scrolled to the bottom: the *About* button is there, *Donate ♥* is gone; *Start* brings the listener up on `127.0.0.1:1443`, and a real request through the proxy returned `resPQ` |

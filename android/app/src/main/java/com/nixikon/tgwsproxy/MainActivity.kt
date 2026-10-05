@@ -46,6 +46,13 @@ class MainActivity : AppCompatActivity() {
          */
         const val ACTION_START_PROXY = "com.nixikon.tgwsproxy.action.START_PROXY"
 
+        /**
+         * Set by the tile when it had to open the app because the system refused
+         * a background foreground-service start. Only explains why the window
+         * appeared; the start itself does not depend on it.
+         */
+        const val EXTRA_TILE_FALLBACK = "com.nixikon.tgwsproxy.extra.TILE_FALLBACK"
+
         /** Notification tapped: show (or re-show) the update dialog. */
         const val ACTION_SHOW_UPDATE = "com.nixikon.tgwsproxy.action.SHOW_UPDATE"
 
@@ -336,7 +343,14 @@ class MainActivity : AppCompatActivity() {
             ACTION_START_PROXY -> {
                 intent.action = null
                 // An activity is a foreground context, so this start is always
-                // allowed — unlike the one the tile attempts.
+                // allowed — unlike the one the tile attempts. When the tile had to
+                // open the app because the system refused that background start,
+                // this brief note is the whole explanation the user gets: it used
+                // to be a modal dialog with the raw system exception in English.
+                if (intent.getBooleanExtra(EXTRA_TILE_FALLBACK, false)) {
+                    intent.removeExtra(EXTRA_TILE_FALLBACK)
+                    UiKit.toast(this, getString(R.string.tile_fallback_toast))
+                }
                 if (!ProxyService.active) {
                     AppLog.append(this, "ui", "auto-start requested from the tile")
                     ProxyService.start(this)

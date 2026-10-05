@@ -170,6 +170,12 @@
     <string name="dialog_diagnostics_title">Diagnostics</string>
     <string name="error_unknown">Unexpected error:\n%1$s</string>
 
+    <!-- Shown when the system refused the service start for a reason other than
+         the background-start restriction (that one is only logged now, and a
+         start from the tile simply opens the app). -->
+    <string name="error_start_rejected">Android refused to start the proxy service from the background.\n\nOpen the app and press Start — a start from a visible window is always allowed.\n\nIf this keeps happening when you start from the Quick Settings tile, check that background work is not restricted for the app: Settings → Battery → Unrestricted.</string>
+    <string name="tile_fallback_toast">The system blocked a background start — turning the proxy on from the app.</string>
+
     <string name="diagnostics_port_busy">Failed to start proxy:\nPort is already in use by another application.\n\nClose the app using this port, or change the port in proxy settings and restart.</string>
     <string name="diagnostics_permission">Failed to start proxy:\nAccess to address/port denied (firewall or permissions).\n\nChange the port to a random value in 10000–50000 in settings and restart.</string>
     <string name="diagnostics_bad_address">Failed to start proxy:\nInvalid or unavailable listen address.\n\nVerify host and port in proxy settings and restart.</string>

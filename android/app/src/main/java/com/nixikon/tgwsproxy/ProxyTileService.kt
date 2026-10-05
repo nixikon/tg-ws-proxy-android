@@ -130,7 +130,7 @@ class ProxyTileService : TileService() {
             refresh(this)
         } else {
             AppLog.append(this, "tile", "start refused, opening the app")
-            openApp()
+            openApp(fallback = true)
         }
     }
 
@@ -164,11 +164,16 @@ class ProxyTileService : TileService() {
      * Opens the app so it can start the proxy from the foreground. Uses
      * `startActivityAndCollapse` first, which is the documented tile API, and
      * falls back to a plain activity start.
+     *
+     * [fallback] is true when the system refused the tile's own background start:
+     * the app then says so in one short toast instead of the modal error dialog
+     * this used to trigger.
      */
-    private fun openApp() {
+    private fun openApp(fallback: Boolean = false) {
         val intent = Intent(this, MainActivity::class.java).apply {
             action = MainActivity.ACTION_START_PROXY
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            if (fallback) putExtra(MainActivity.EXTRA_TILE_FALLBACK, true)
         }
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {

@@ -104,6 +104,10 @@ object StatusText {
         "permission" -> ctx.getString(R.string.diagnostics_permission)
         "bad_address" -> ctx.getString(R.string.diagnostics_bad_address)
         "dc_config" -> ctx.getString(R.string.error_dc_config)
+        // The system refused the service start for a reason other than the
+        // background restriction (that one never reaches the UI). The raw
+        // exception text is in the log; the dialog explains what to do.
+        "start_rejected" -> ctx.getString(R.string.error_start_rejected)
         "timeout", "stop_timeout", "stopping" ->
             ctx.getString(R.string.error_unknown, "$code $detail".trim())
         else -> ctx.getString(R.string.error_unknown, detail.ifEmpty { code })
