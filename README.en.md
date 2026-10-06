@@ -15,9 +15,9 @@ CPython interpreter via [Chaquopy](https://chaquo.com/chaquopy/).
 ## Deliverable
 
 Ready-made APKs live in [Releases](../../releases/latest): the latest is
-`TgWsProxy-1.11.0-a9-android.apk` (a fork release build, ~38 MB, ABIs
-`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `a8` and older
-builds kept beside it for rollback. Building from source is described below.
+`TgWsProxy-1.11.1-a1-android.apk` (a fork release build, ~38 MB, ABIs
+`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `1.11.0-a9` and
+older builds kept beside it for rollback. Building from source is described below.
 
 The APK is signed with the standard Android **debug** key so it can be
 sideloaded directly (`adb install` or tapping the file). For a Play Store
@@ -97,7 +97,7 @@ reduction.
 ## Changes to the Python core
 
 **Twelve of the fourteen files in `proxy/` are byte-identical to upstream
-1.11.0** (it was nine of eleven on 1.10.4; three modules were added in 1.11.0).
+1.11.1** (it was nine of eleven on 1.10.4; three modules were added in 1.11.0).
 
 | File | Status | Why |
 | --- | --- | --- |
@@ -110,7 +110,7 @@ reduction.
 | `proxy/balancer.py` | identical | — |
 | `proxy/stats.py` | identical | — |
 | `proxy/__init__.py` | identical | — |
-| `proxy/cf_h2.py` | identical | new in 1.11.0 |
+| `proxy/cf_h2.py` | identical | new in 1.11.0, updated in 1.11.1 (404 handling while multiplexing) |
 | `proxy/h2_transport.py` | identical | new in 1.11.0 |
 | `proxy/network_debug.py` | identical | new in 1.11.0 |
 | `proxy/_aes.py` | modified | Adds the JVM backend and per-backend known-answer validation; public API unchanged |
@@ -152,6 +152,16 @@ cd android
 The Gradle wrapper pins the same Gradle version the builds here were made with
 (8.14.3). `android/local.properties` is not committed — point `ANDROID_HOME` (or
 `sdk.dir`) at your SDK instead.
+
+## Revision 15 — core updated to upstream 1.11.1
+
+| What | Details |
+| --- | --- |
+| **What upstream changed** | 1.11.1 is a point fix: handling of HTTP 404 while multiplexing media over HTTP/2. 403, 404, 429 and 444 responses from Cloudflare are no longer treated as a transport failure — the code is passed to the Telegram client as an ordinary reply, the channel stays usable and the next attempt may pick another domain. Before this, such a response tore the channel down and media/file downloads stopped progressing |
+| **Ported into the fork's core** | Only `proxy/cf_h2.py` was replaced — the file is, as before, **byte-identical to upstream 1.11.1** (checked against the blob hash of tag `v1.11.1`); `proxy/__init__.py` reports version `1.11.1`. Nothing else under `proxy/` changed between 1.11.0 and 1.11.1 |
+| **Compatibility** | 1.11.1 adds no settings: the config, the secret and the connect link are unchanged. The app version is `1.11.1-a1`, the first fork build on the new core line |
+| **Core verification** | The upstream 1.11.1 test suite was run against the very core that ships in the APK: **153 passed, 47 subtests passed**. `test_update_check.py` (the feature was removed in revision 3) and `test_h2_settings.py` (imports the desktop-only `utils/tray_common.py`) are excluded |
+| **Version** | `1.11.1-a1` (versionCode 16) |
 
 ## Revision 14 — starting from the tile without a bogus error dialog
 
@@ -409,18 +419,19 @@ Four independent layers, all green:
 
 | Layer | Command | Result |
 | --- | --- | --- |
-| Upstream test suite (CPython 3.12) | `python -m pytest tests --ignore=tests/test_update_check.py` | 47 passed, 4 subtests passed |
-| Upstream test suite (CPython **3.13.9**, the version Android embeds) | `.py313\python.exe -m pytest tests --ignore=tests/test_update_check.py` | 47 passed, 4 subtests passed |
+| Upstream **1.11.1** test suite against the very core that ships inside the APK (CPython **3.13.9** from `.py313`; `httpx` and `h2` taken from the built APK — exactly the versions that run on Android) | `pytest tests` with `sys.path` pointing at `android/app/src/main/python` | **153 passed, 47 subtests passed** |
 | End-to-end proxy (real Telegram round trip, host) | `python tools/e2e_proxy_test.py <dir>` | obfuscated2 handshake accepted, WebSocket bridge established, genuine `resPQ` reply received |
 | APK integrity | `python tools/verify_apk.py <apk> android/app/src/main/python` | 22 Python files byte-identical to source, CA store intact, 8 native libs per ABI, RU/EN strings present, `requirements-*.imy` with `httpx`/`h2` inside |
 | **Emulator: app drives real traffic** | `python tools/mtproto_probe.py 127.0.0.1 <port> <secret>` after `adb forward` | `resPQ` returned by the app running on the emulator |
 | Emulator: UI flows | `python tools/android_ui.py tap/texts/wait/shot` | every screen and action listed above |
 
 `tests/test_update_check.py` is excluded on purpose: it imports
-`utils.update_check`, which revision 3 removed along with the feature. It is the
-only test that fails, and it fails with exactly
-`ModuleNotFoundError: No module named 'utils.update_check'` — the remaining 47
-tests pass unchanged.
+`utils.update_check`, which revision 3 removed along with the feature, and it fails
+with exactly `ModuleNotFoundError: No module named 'utils.update_check'`.
+`tests/test_h2_settings.py` is excluded for the same kind of reason: it imports the
+desktop-only `utils/tray_common.py` (the tray icon is a desktop concern), which the
+Android port does not carry. The remaining **153 tests** of upstream 1.11.1 pass
+against the core that sits in the APK.
 
 The end-to-end test drives the same `android_entry` entry point the app uses and
 acts as a Telegram client: it builds a real obfuscated2 handshake, sends a
@@ -482,6 +493,8 @@ through `adb` and checked on screen:
 | **Notification channel after `a6` → `a7`** | notification `id=1001` arrives on channel `proxy_status_v2` with `importance=3` and `mSound=null`; the old `proxy_status` channel is marked `mDeleted=true` |
 | **"T" icon and notification state** | with the proxy running the screenshot shows the "T" next to the clock; Diagnostics reports `notifications: enabled=true channel=proxy_status_v2 importance=3 (status-bar icon expected)` |
 | **Calls section** | the main screen shows the note, and *Why, and what to do* opens a scrollable dialog with the reason and the options |
+| **Core 1.11.1 in build `a1`** | Diagnostics on the emulator: `app 1.11.1-a1 (16)`, `✓ proxy_core: core 1.11.1, port 1443`, `✓ http2_stack: httpx 0.28.1, h2 4.4.1`, `✓ aes_ctr: backend=jvm`, `✓ versions: 12 сравнений верны`; the log says `TG WS Proxy 1.11.1 (Android) starting`; `python tools/mtproto_probe.py 127.0.0.1 1443 <secret>` after `adb forward` returned a genuine `resPQ` (`resPQ received (100 byte frame)`) and the log showed `DC2 -> WS pool hit` |
+| **Starting `a1` from the tile** | the app was force-stopped and opened with `ACTION_START_PROXY`: the log shows `auto-start requested from the tile`, the proxy came up on `127.0.0.1:1443` and no error dialog appeared |
 
 The `resPQ` round trip is the important one: it exercises Chaquopy, the
 **JVM AES backend** (the first time that path actually ran), the handshake

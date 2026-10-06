@@ -29,7 +29,10 @@ data class ProxyConfig(
     var cfproxyUserDomain: MutableList<String> = mutableListOf(),
     var cfproxyWorkerEnabled: Boolean = false,
     var cfproxyWorkerDomain: MutableList<String> = mutableListOf(),
-    /** Upstream 1.11.0: multiplex media downloads over one HTTP/2 connection. */
+    /**
+     * Upstream 1.11.0: multiplex media downloads over one HTTP/2 connection.
+     * Upstream 1.11.1 fixed the 404 handling that made media downloads stall.
+     */
     var h2: Boolean = true,
     var forceTestDc: Boolean = false,
     var noSecure: Boolean = false,
