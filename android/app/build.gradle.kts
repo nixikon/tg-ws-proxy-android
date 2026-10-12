@@ -21,8 +21,8 @@ android {
         applicationId = "com.nixikon.tgwsproxy"
         minSdk = 24
         targetSdk = 36
-        versionCode = 16
-        versionName = "1.11.1-a1"
+        versionCode = 17
+        versionName = "1.11.2-a1"
 
         buildConfigField("String", "UPDATE_REPO", "\"$updateRepo\"")
         buildConfigField("String", "UPDATE_TOKEN", "\"$updateToken\"")

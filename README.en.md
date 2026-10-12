@@ -15,8 +15,8 @@ CPython interpreter via [Chaquopy](https://chaquo.com/chaquopy/).
 ## Deliverable
 
 Ready-made APKs live in [Releases](../../releases/latest): the latest is
-`TgWsProxy-1.11.1-a1-android.apk` (a fork release build, ~38 MB, ABIs
-`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `1.11.0-a9` and
+`TgWsProxy-1.11.2-a1-android.apk` (a fork release build, ~38 MB, ABIs
+`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `1.11.1-a1` and
 older builds kept beside it for rollback. Building from source is described below.
 
 The APK is signed with the standard Android **debug** key so it can be
@@ -96,8 +96,8 @@ reduction.
 
 ## Changes to the Python core
 
-**Twelve of the fourteen files in `proxy/` are byte-identical to upstream
-1.11.1** (it was nine of eleven on 1.10.4; three modules were added in 1.11.0).
+**Thirteen of the fifteen files in `proxy/` are byte-identical to upstream
+1.11.2** (it was twelve of fourteen on 1.11.1; `event_loop.py` is new in 1.11.2).
 
 | File | Status | Why |
 | --- | --- | --- |
@@ -110,8 +110,9 @@ reduction.
 | `proxy/balancer.py` | identical | — |
 | `proxy/stats.py` | identical | — |
 | `proxy/__init__.py` | identical | — |
-| `proxy/cf_h2.py` | identical | new in 1.11.0, updated in 1.11.1 (404 handling while multiplexing) |
-| `proxy/h2_transport.py` | identical | new in 1.11.0 |
+| `proxy/cf_h2.py` | identical | new in 1.11.0, updated in 1.11.1 (404 handling while multiplexing) and 1.11.2 (plain padding up to 256 bytes, replay reply ids, safer recovery wakeup) |
+| `proxy/h2_transport.py` | identical | new in 1.11.0, updated in 1.11.2 (batched IO, connection-level flow-control credits, reconnect after an idle-socket read timeout) |
+| `proxy/event_loop.py` | identical | new in 1.11.2 — the Windows event-loop self-pipe guard; a no-op on Android (`sys.platform` check) |
 | `proxy/network_debug.py` | identical | new in 1.11.0 |
 | `proxy/_aes.py` | modified | Adds the JVM backend and per-backend known-answer validation; public API unchanged |
 | `proxy/utils.py` | modified | `certifi` replaced by a configurable CA lookup that also understands Android's trust store (plus the 1.11.0 `ws_domains` change) |
@@ -152,6 +153,17 @@ cd android
 The Gradle wrapper pins the same Gradle version the builds here were made with
 (8.14.3). `android/local.properties` is not committed — point `ANDROID_HOME` (or
 `sdk.dir`) at your SDK instead.
+
+## Revision 16 — core updated to upstream 1.11.2
+
+| What | Details |
+| --- | --- |
+| **What upstream changed** | A large point release. The CF Worker pool is now shut down with the proxy (refill tasks are tracked and cancelled, idle sockets are closed) instead of surviving a stop; an HTTP/2 connection whose last active stream times out is torn down so the next request reconnects, which is what used to leave media/file downloads hanging on a silently dead socket; plain padded native packets accept up to 256 bytes of padding instead of 15; a successful reply now records its reply id, so replaying a request that gets the same reply resets the attempt counter; and the hot paths were optimised (table-driven XOR for WebSocket frames ≥512 bytes, 64 KiB HTTP/2 IO batches, connection-level flow-control credit accumulation, one less AES pass in the packet splitter, no drain when there is nothing to flush) |
+| **Ported into the fork's core** | Eight files under `proxy/` were replaced by their 1.11.2 versions (`bridge.py`, `cf_h2.py`, `h2_transport.py`, `pool.py`, `raw_websocket.py`, `tg_ws_proxy.py`, `utils.py`, `__init__.py`) and the new `event_loop.py` was added; all of them are **byte-identical to upstream 1.11.2** (checked against the blob hashes of tag `v1.11.2`), except the two Android adaptations — `_aes.py` and `utils.py`, where only the `OPTI` reserved start came from 1.11.2 because the CA lookup is the Android one |
+| **Out of scope** | 1.11.2 also reworked the desktop updater (manual check, Linux self-update), translated the secret/donate UI and added SignPath signing: those live in `utils/`, `ui/`, `packaging/` and the platform scripts, none of which the Android port carries |
+| **Compatibility** | 1.11.2 adds no settings: the config, the secret and the connect link are unchanged. The app version is `1.11.2-a1` |
+| **Core verification** | The upstream 1.11.2 test suite was run against the very core that ships in the APK (CPython 3.13, `httpx` 0.28.1 and `h2` 4.4.1 from the built APK): **176 passed, 410 subtests passed**. Excluded are the desktop-only modules the port does not carry: `test_update_check.py`, `test_h2_settings.py`, `test_linux_update.py`, `test_windows_update.py`, `test_tray_common.py` and `test_i18n.py` (upstream's own locale JSON files) |
+| **Version** | `1.11.2-a1` (versionCode 17) |
 
 ## Revision 15 — core updated to upstream 1.11.1
 
@@ -419,7 +431,7 @@ Four independent layers, all green:
 
 | Layer | Command | Result |
 | --- | --- | --- |
-| Upstream **1.11.1** test suite against the very core that ships inside the APK (CPython **3.13.9** from `.py313`; `httpx` and `h2` taken from the built APK — exactly the versions that run on Android) | `pytest tests` with `sys.path` pointing at `android/app/src/main/python` | **153 passed, 47 subtests passed** |
+| Upstream **1.11.2** test suite against the very core that ships inside the APK (CPython **3.13.9** from `.py313`; `httpx` 0.28.1 and `h2` 4.4.1 taken from the built APK — exactly the versions that run on Android) | `run_upstream_tests.py` (pytest, `--import-mode=importlib`, `sys.path` pointing at `android/app/src/main/python`) | **176 passed, 410 subtests passed** |
 | End-to-end proxy (real Telegram round trip, host) | `python tools/e2e_proxy_test.py <dir>` | obfuscated2 handshake accepted, WebSocket bridge established, genuine `resPQ` reply received |
 | APK integrity | `python tools/verify_apk.py <apk> android/app/src/main/python` | 22 Python files byte-identical to source, CA store intact, 8 native libs per ABI, RU/EN strings present, `requirements-*.imy` with `httpx`/`h2` inside |
 | **Emulator: app drives real traffic** | `python tools/mtproto_probe.py 127.0.0.1 <port> <secret>` after `adb forward` | `resPQ` returned by the app running on the emulator |
@@ -428,10 +440,33 @@ Four independent layers, all green:
 `tests/test_update_check.py` is excluded on purpose: it imports
 `utils.update_check`, which revision 3 removed along with the feature, and it fails
 with exactly `ModuleNotFoundError: No module named 'utils.update_check'`.
-`tests/test_h2_settings.py` is excluded for the same kind of reason: it imports the
-desktop-only `utils/tray_common.py` (the tray icon is a desktop concern), which the
-Android port does not carry. The remaining **153 tests** of upstream 1.11.1 pass
-against the core that sits in the APK.
+Three more files are excluded for the same kind of reason — they import
+desktop-only modules the Android port does not carry: `test_h2_settings.py`
+(`utils/tray_common.py`, `ui/settings.py`), `test_linux_update.py`
+(`utils/linux_update.py`, `utils/update_check.py`) and `test_windows_update.py`
+(`utils/windows_update.py`), plus `test_tray_common.py`. `test_i18n.py` is left
+out as well: it validates upstream's own `ui/i18n/*.json` files, which say nothing
+about the Android UI (that one is localised in Kotlin). The remaining **176 tests**
+of upstream 1.11.2 pass against the core that sits in the APK.
+
+The suite is started through
+[run_upstream_tests.py](run_upstream_tests.py), which inserts the port's core,
+`httpx`/`h2` and the bundled pytest into `sys.path` (the embedded CPython in
+`.py313` ignores `PYTHONPATH`) and uses `--import-mode=importlib` so that pytest
+does not put the upstream checkout on `sys.path` — that is what makes
+`import proxy` resolve to the port's core rather than upstream's own copy. The
+script also creates temporary directories with default permissions, because the
+DSH file sandbox denies writes inside the owner-only (`0o700`) directories
+`mkdtemp` creates, which the H2 wire tests need for their self-signed
+certificates.
+
+The two runtime checks have launchers of the same kind: `run_e2e_test.py` runs
+the host end-to-end test with the same `sys.path` setup, and
+`run_emulator_smoke.py` drives the emulator — it boots the AVD, installs the
+release APK, starts the proxy the way the Quick Settings tile does, reads the
+connect link from the UI, forwards the port and probes the running proxy with
+`tools/mtproto_probe.py`, then collects the Diagnostics text, the app log and a
+screenshot into `emulator-smoke-1112.json`.
 
 The end-to-end test drives the same `android_entry` entry point the app uses and
 acts as a Telegram client: it builds a real obfuscated2 handshake, sends a
@@ -494,6 +529,7 @@ through `adb` and checked on screen:
 | **"T" icon and notification state** | with the proxy running the screenshot shows the "T" next to the clock; Diagnostics reports `notifications: enabled=true channel=proxy_status_v2 importance=3 (status-bar icon expected)` |
 | **Calls section** | the main screen shows the note, and *Why, and what to do* opens a scrollable dialog with the reason and the options |
 | **Core 1.11.1 in build `a1`** | Diagnostics on the emulator: `app 1.11.1-a1 (16)`, `✓ proxy_core: core 1.11.1, port 1443`, `✓ http2_stack: httpx 0.28.1, h2 4.4.1`, `✓ aes_ctr: backend=jvm`, `✓ versions: 12 сравнений верны`; the log says `TG WS Proxy 1.11.1 (Android) starting`; `python tools/mtproto_probe.py 127.0.0.1 1443 <secret>` after `adb forward` returned a genuine `resPQ` (`resPQ received (100 byte frame)`) and the log showed `DC2 -> WS pool hit` |
+| **Core 1.11.2 in build `a1`** | Fresh install of `1.11.2-a1` (versionCode 17) via `run_emulator_smoke.py`: diagnostics read `app 1.11.2-a1 (17)`, `✓ proxy_core: core 1.11.2, port 1443`, `✓ http2_stack: httpx 0.28.1, h2 4.4.1`, `✓ aes_ctr: backend=jvm`, `✓ ca_bundle: …/files/cacert.pem`, `call path: DC2 149.154.167.51:443 ok, DC203/call 91.105.192.100:443 ok`; the log opened with `TG WS Proxy 1.11.2 (Android) starting`. The proxy started by the tile action (`auto-start requested from the tile`) relayed a real request after `adb forward`: `RESULT: resPQ received (100 byte frame) — proxy relays traffic`, log `[127.0.0.1:57491] DC2 -> WS pool hit` … `DC2 WS session closed (normal): ↑44.0B (1 pkts) ↓104.0B (1 pkts)`, stats `bad=0 … up=44.0B down=104.0B` |
 | **Starting `a1` from the tile** | the app was force-stopped and opened with `ACTION_START_PROXY`: the log shows `auto-start requested from the tile`, the proxy came up on `127.0.0.1:1443` and no error dialog appeared |
 
 The `resPQ` round trip is the important one: it exercises Chaquopy, the
