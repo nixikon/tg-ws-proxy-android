@@ -96,10 +96,17 @@ object UpdateChecker {
         val xml = get("$WEB/${BuildConfig.UPDATE_REPO}/releases.atom")
         val entry = Regex("<entry>(.*?)</entry>", RegexOption.DOT_MATCHES_ALL)
             .find(xml)?.groupValues?.get(1) ?: return null
-        val rawTag = Regex("<title>(.*?)</title>", RegexOption.DOT_MATCHES_ALL)
-            .find(entry)?.groupValues?.get(1) ?: return null
 
-        val tag = unescape(rawTag).trim()
+        // The *tag* has to come from the entry link: the feed's <title> is the
+        // release *name*, and this project's release names carry no "v" prefix
+        // while the tags do. Using the title as the tag built
+        // `releases/download/1.11.2-a2/...`, which GitHub answers with 404 — the
+        // fallback was therefore broken for every release ever published here.
+        val link = Regex("<link[^>]*href=\"([^\"]+)\"", RegexOption.DOT_MATCHES_ALL)
+            .find(entry)?.groupValues?.get(1) ?: return null
+        val tag = link.substringAfter("/releases/tag/", "")
+            .ifEmpty { unescape(Regex("<title>(.*?)</title>", RegexOption.DOT_MATCHES_ALL)
+                .find(entry)?.groupValues?.get(1) ?: return null).trim() }
         val version = tag.trimStart('v', 'V')
         if (version.isEmpty()) return null
         if (compareVersions(version, currentVersion) <= 0) return null
@@ -221,7 +228,7 @@ object UpdateChecker {
         connection.disconnect()
 
         if (release.sha256.isNotEmpty()) {
-            val actual = sha256(target)
+            val actual = sha256Of(target)
             if (!actual.equals(release.sha256, ignoreCase = true)) {
                 target.delete()
                 throw IllegalStateException(
@@ -317,7 +324,8 @@ object UpdateChecker {
         .replace(Regex("<[^>]+>"), "")
         .replace(Regex("\n{3,}"), "\n\n")
 
-    private fun sha256(file: File): String {
+    /** SHA-256 of a file, lower-case hex. Also used to validate a cached download. */
+    fun sha256Of(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
             val buffer = ByteArray(64 * 1024)

@@ -793,10 +793,13 @@ class MainActivity : AppCompatActivity() {
         Jobs.run({
             val target = File(cacheDir, "update.apk")
             // Reuse a complete previous download instead of fetching tens of
-            // megabytes again.
-            if (target.isFile && release.sizeBytes > 0 &&
-                target.length() == release.sizeBytes
-            ) {
+            // megabytes again — but only when the cached file is provably the
+            // asset the release advertises. The length alone proves nothing: a
+            // re-uploaded asset keeps its size, and a cached copy of the previous
+            // build would then be handed to the installer again, which is how a
+            // re-issued 1.11.2-a1 kept failing with a signature mismatch after
+            // the fix was already published.
+            if (reusableDownload(target, release)) {
                 return@run target
             }
             if (target.exists()) target.delete()
@@ -818,8 +821,65 @@ class MainActivity : AppCompatActivity() {
                 )
                 return@run
             }
+            if (!isInstallableUpdate(file)) {
+                // Only possible through the feed fallback, which carries no
+                // digest: the installer would otherwise answer with its bare
+                // "App not installed" and the user learns nothing.
+                file.delete()
+                AppLog.append(this, "update", "downloaded file is not an installable update; discarded")
+                showErrorDialog(
+                    getString(R.string.update_title),
+                    getString(R.string.update_failed, getString(R.string.update_bad_file)),
+                )
+                return@run
+            }
             installApk(file)
         }
+    }
+
+    /**
+     * True when [file] is an installable update of this app: it parses, it is our
+     * package, and its version code is strictly newer than the installed one.
+     *
+     * The API path proves downloads with the asset's SHA-256; the releases feed
+     * carries no such digest, so the file is checked here instead of being handed
+     * to the installer on trust.
+     */
+    private fun isInstallableUpdate(file: File): Boolean {
+        val archive = packageManager.getPackageArchiveInfo(file.absolutePath, 0) ?: return false
+        if (archive.packageName != packageName) return false
+        @Suppress("DEPRECATION")
+        val archiveCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            archive.longVersionCode
+        } else {
+            archive.versionCode.toLong()
+        }
+        val installedCode = try {
+            val info = packageManager.getPackageInfo(packageName, 0)
+            @Suppress("DEPRECATION")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) info.longVersionCode
+            else info.versionCode.toLong()
+        } catch (_: Exception) {
+            0L
+        }
+        return archiveCode > installedCode
+    }
+
+    /**
+     * True when the cached download is exactly the asset the release offers.
+     *
+     * The API reports a SHA-256 for every asset, so the file can be proven; when
+     * there is no digest (the releases feed fallback carries none) nothing can be
+     * proven and the download is repeated. An update happens rarely, and handing
+     * the installer a stale file costs the user far more than 38 MB of traffic.
+     */
+    private fun reusableDownload(file: File, release: UpdateChecker.Release): Boolean {
+        if (!file.isFile || release.sha256.isEmpty()) return false
+        if (release.sizeBytes > 0 && file.length() != release.sizeBytes) return false
+        val actual = UpdateChecker.sha256Of(file)
+        if (actual.equals(release.sha256, ignoreCase = true)) return true
+        AppLog.append(this, "update", "cached update.apk is stale (${actual.take(12)}…), downloading again")
+        return false
     }
 
     /** Hands the downloaded APK to the system installer. */

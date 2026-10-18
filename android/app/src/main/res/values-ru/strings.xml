@@ -214,6 +214,7 @@
     <string name="update_downloading">Скачивание… %1$d%%</string>
     <string name="update_failed">Не удалось скачать:\n%1$s</string>
     <string name="update_install_failed">Не удалось запустить установщик:\n%1$s</string>
+    <string name="update_bad_file">скачанный файл не является новой сборкой этого приложения</string>
     <string name="update_need_permission">Android требует разрешение на установку обновлений из этого приложения. Включите его на следующем экране — обновление продолжится само.</string>
     <string name="update_open_settings">Открыть настройки</string>
 

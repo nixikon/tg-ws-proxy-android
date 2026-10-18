@@ -216,6 +216,7 @@
     <string name="update_downloading">Downloading… %1$d%%</string>
     <string name="update_failed">Download failed:\n%1$s</string>
     <string name="update_install_failed">Could not start the installer:\n%1$s</string>
+    <string name="update_bad_file">the downloaded file is not a newer build of this app</string>
     <string name="update_need_permission">Android needs your permission to install updates from this app. Enable it on the next screen and the update continues by itself.</string>
     <string name="update_open_settings">Open settings</string>
 

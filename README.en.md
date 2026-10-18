@@ -15,9 +15,10 @@ CPython interpreter via [Chaquopy](https://chaquo.com/chaquopy/).
 ## Deliverable
 
 Ready-made APKs live in [Releases](../../releases/latest): the latest is
-`TgWsProxy-1.11.2-a1-android.apk` (a fork release build, ~38 MB, ABIs
-`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `1.11.1-a1` and
-older builds kept beside it for rollback. Building from source is described below.
+`TgWsProxy-1.11.2-a3-android.apk` (a fork release build, ~38 MB, ABIs
+`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `1.11.2-a2`,
+`1.11.2-a1`, `1.11.1-a1` and older builds kept beside it for rollback. Building
+from source is described below.
 
 The APK is signed with the standard Android **debug** key so it can be
 sideloaded directly (`adb install` or tapping the file). For a Play Store
@@ -153,6 +154,45 @@ cd android
 The Gradle wrapper pins the same Gradle version the builds here were made with
 (8.14.3). `android/local.properties` is not committed — point `ANDROID_HOME` (or
 `sdk.dir`) at your SDK instead.
+
+> **Signing — read this before publishing an APK.** Both build types use the
+> *debug* signing config, so the certificate comes from the debug keystore in the
+> Android user home, and Gradle quietly creates a new key when that home has
+> none. Updates only install when the certificate stays the same, so a build with
+> a fresh key is a build nobody can install over the previous version. The fork's
+> key lives outside the repository (`<workspace>/.android-home/debug.keystore`,
+> certificate SHA-256 `ab887caa…`), and `python tools/build_apk.py` points the
+> build at it and prints the certificate it produced. If you build with Gradle
+> directly, set `ANDROID_USER_HOME` to that directory yourself and check the
+> result with `python tools/verify_apk.py`, which fails when the signer is not the
+> fork's key.
+
+## Revision 18 — the fallback update path never worked
+
+| What | Details |
+| --- | --- |
+| **Symptom** | With the GitHub API refusing the check, the updater reported `Download failed: HTTP 404 while downloading TgWsProxy-1.11.2-a2-android.apk` |
+| **Cause** | The check asks the API first and falls back to the public `releases.atom` feed when that fails — the unauthenticated API allows 60 requests per hour per address and that quota is shared by everyone behind the same NAT. A feed entry's `<title>` is the release *name* (`1.11.2-a2`), while the download URL needs the *tag* (`v1.11.2-a2`); the code used the title as the tag and asked for `releases/download/1.11.2-a2/…`, which GitHub answers with 404. Every release of this fork is named without the `v` prefix, so the fallback had never worked |
+| **Fix** | The tag is taken from the entry link (`/releases/tag/<tag>`), with the title only as a last resort |
+| **Extra guard** | Nothing vouches for a file fetched through the feed (the feed carries neither size nor digest), and a damaged download used to reach the installer, which answers with a bare "App not installed". The file is now parsed before the installer sees it: it must be this package and its version code must be strictly newer, otherwise it is deleted and the dialog explains why |
+| **Verification** | The API quota was deliberately exhausted from the host (HTTP 403), so the emulator *had* to use the feed. From the installed `1.11.2-a3` the app found, downloaded and installed the next build through the system installer — no 404 (that was a throwaway `1.11.2-a4`, versionCode 20, deleted after the check; `1.11.2-a3` remains the current release). The new "must be a newer build" guard was exercised in the same run |
+| **Emulator caveat, not an app defect** | Play Protect's install-time verification aborts sideloaded installs on this emulator with the same unhelpful "App not installed" — `adb install -r` of the very same APK succeeds. `run_update_test.py` switches the verifier off so the test measures the app rather than the emulator |
+| **Version** | `1.11.2-a3` (versionCode 19) |
+
+## Revision 17 — the update that would not install
+
+| What | Details |
+| --- | --- |
+| **Symptom** | Pressing *Update* downloaded the build, the system installer opened, and the update did not install — reported from a device |
+| **Root cause** | `1.11.2-a1` had been built without `ANDROID_USER_HOME` pointing at the fork's keystore home, so Gradle created a fresh debug key in the default location. The published APK was signed with `87b584ef…` while every release up to `1.11.1-a1` carries `ab887caa…`, and Android refuses to update an app whose certificate differs (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`): the download itself is fine, the install is not |
+| **A second defect behind it** | The updater reused `cache/update.apk` whenever only its *length* matched the asset. Re-uploading an asset keeps its length — the broken and the fixed build are both 39 998 035 bytes — so pressing *Update* again kept handing the installer the same broken file even after the asset had been replaced |
+| **Release-side fix** | The `1.11.2-a1` asset was re-issued under the fork's key (its release body records this) and `1.11.2-a2` was published |
+| **App-side fix** | A cached download is accepted only when its SHA-256 equals the digest the release API reports; otherwise the file is deleted and downloaded again. Without a digest (the releases-feed fallback) nothing is reused |
+| **Why a new version rather than a silent rebuild** | The version has to grow for the update to be offered to a device running `1.11.1-a1`. `a2` is also 64 bytes larger — it carries `assets/LICENSE.txt` — so the size-only check inside already-installed builds cannot match the cached file and the download happens automatically, without asking the user to clear anything |
+| **Guards against a repeat** | `tools/verify_apk.py` compares the APK's signing certificate with `EXPECTED_SIGNER` and fails on any other key (and refuses bytecode caches inside `app.imy`); `tools/build_apk.py` builds with the correct keystore home, prints the certificate, and stops when it is not the fork's key |
+| **Verification** | `run_update_test.py` installs `1.11.1-a1`, confirms the platform refuses the wrongly-signed APK with `INSTALL_FAILED_UPDATE_INCOMPATIBLE` (the reported symptom, reproduced), and then lets the app update itself through its own dialog and the system installer up to `1.11.2-a2`. Planting the broken file into the app's private cache as well would need `adb root`, which production emulator images refuse; the script reports whether it managed |
+| **Core unchanged** | `1.11.2` as in revision 16: no changes under `proxy/`, no new settings, same secret and connect link |
+| **Version** | `1.11.2-a2` (versionCode 18) |
 
 ## Revision 16 — core updated to upstream 1.11.2
 
@@ -433,7 +473,8 @@ Four independent layers, all green:
 | --- | --- | --- |
 | Upstream **1.11.2** test suite against the very core that ships inside the APK (CPython **3.13.9** from `.py313`; `httpx` 0.28.1 and `h2` 4.4.1 taken from the built APK — exactly the versions that run on Android) | `run_upstream_tests.py` (pytest, `--import-mode=importlib`, `sys.path` pointing at `android/app/src/main/python`) | **176 passed, 410 subtests passed** |
 | End-to-end proxy (real Telegram round trip, host) | `python tools/e2e_proxy_test.py <dir>` | obfuscated2 handshake accepted, WebSocket bridge established, genuine `resPQ` reply received |
-| APK integrity | `python tools/verify_apk.py <apk> android/app/src/main/python` | 22 Python files byte-identical to source, CA store intact, 8 native libs per ABI, RU/EN strings present, `requirements-*.imy` with `httpx`/`h2` inside |
+| APK integrity and signing | `python tools/verify_apk.py <apk> android/app/src/main/python` | 23 Python files byte-identical to source, no bytecode caches in `app.imy`, CA store intact, 8 native libs per ABI, RU/EN strings present, and the signing certificate matches the fork's release key (`ab887caa…`) — an APK with any other key cannot be installed over an existing copy |
+| **In-app update** | `run_update_test.py <old-apk> <broken-apk>` | installing the wrongly-signed `1.11.2-a1` over `1.11.1-a1` is refused with exactly `INSTALL_FAILED_UPDATE_INCOMPATIBLE: … signatures do not match` — the reported bug reproduced — after which the app updates itself through its own dialog and the system installer to `1.11.2-a2` (versionCode 18) |
 | **Emulator: app drives real traffic** | `python tools/mtproto_probe.py 127.0.0.1 <port> <secret>` after `adb forward` | `resPQ` returned by the app running on the emulator |
 | Emulator: UI flows | `python tools/android_ui.py tap/texts/wait/shot` | every screen and action listed above |
 
