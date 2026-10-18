@@ -815,6 +815,22 @@ class MainActivity : AppCompatActivity() {
             if (file == null) {
                 val reason = result.exceptionOrNull()?.message ?: ""
                 AppLog.append(this, "update", "download failed: $reason")
+                if (reason.contains("HTTP 404")) {
+                    // A cached release can point at an asset that no longer
+                    // exists — the release was deleted or replaced under another
+                    // tag. Forget it and ask GitHub again instead of offering the
+                    // same dead link on every launch.
+                    UpdateChecker.clearCache(this)
+                    lastRelease = null
+                    offeredVersion = null
+                    showErrorDialog(
+                        getString(R.string.update_title),
+                        getString(R.string.update_gone),
+                    )
+                    updateChecked = false
+                    maybeCheckForUpdates()
+                    return@run
+                }
                 showErrorDialog(
                     getString(R.string.update_title),
                     getString(R.string.update_failed, reason),

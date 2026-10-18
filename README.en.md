@@ -15,10 +15,10 @@ CPython interpreter via [Chaquopy](https://chaquo.com/chaquopy/).
 ## Deliverable
 
 Ready-made APKs live in [Releases](../../releases/latest): the latest is
-`TgWsProxy-1.11.2-a3-android.apk` (a fork release build, ~38 MB, ABIs
-`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `1.11.2-a2`,
-`1.11.2-a1`, `1.11.1-a1` and older builds kept beside it for rollback. Building
-from source is described below.
+`TgWsProxy-1.11.2-a4-android.apk` (a fork release build, ~38 MB, ABIs
+`arm64-v8a` + `x86_64`, package `com.nixikon.tgwsproxy`), with `1.11.2-a3`,
+`1.11.2-a2`, `1.11.2-a1`, `1.11.1-a1` and older builds kept beside it for
+rollback. Building from source is described below.
 
 The APK is signed with the standard Android **debug** key so it can be
 sideloaded directly (`adb install` or tapping the file). For a Play Store
@@ -166,6 +166,16 @@ The Gradle wrapper pins the same Gradle version the builds here were made with
 > directly, set `ANDROID_USER_HOME` to that directory yourself and check the
 > result with `python tools/verify_apk.py`, which fails when the signer is not the
 > fork's key.
+
+## Revision 19 — a deleted release left the updater stuck on 404
+
+| What | Details |
+| --- | --- |
+| **Symptom** | `Download failed: HTTP 404 while downloading TgWsProxy-1.11.2-a4-android.apk` on a device whose build predates the fixes, even though pressing *Update* used to reach the installer |
+| **Cause** | The updater caches the release it last found (version, asset name, size, digest) and offers it on the next launch before the network answers — the notification's *Download* action uses that cache as well. A release that was published for a few minutes during verification and then deleted left already-cached entries pointing at a file that no longer exists; nothing cleared that cache |
+| **Fix** | A 404 while downloading now clears the cached release, explains what happened and re-runs the check, so the current build is offered instead of the dead link. The build that had been deleted is published again as `1.11.2-a4`, which also makes the link inside already-cached entries valid |
+| **What a device on an older build should do** | Restart the app (the launch check refreshes the cache), then press *Download and install*; the update installs over `1.11.1-a1` because the signing key is the fork's |
+| **Version** | `1.11.2-a4` (versionCode 20) |
 
 ## Revision 18 — the fallback update path never worked
 
